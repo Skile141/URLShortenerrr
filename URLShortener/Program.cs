@@ -14,17 +14,7 @@ builder.Services.AddScoped<URLShortenerService>();
 // Add controllers
 builder.Services.AddControllers();
 
-// Add CORS policy
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowSpecificOrigins",
-        policy =>
-        {
-            policy.WithOrigins("http://localhost:5000", "https://your-swagger-ui-domain.com")
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
-        });
-});
+
 
 // Add Swagger/OpenAPI support
 builder.Services.AddEndpointsApiExplorer();
@@ -40,7 +30,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseCors("AllowSpecificOrigins"); // Make sure this is placed before UseRouting
 
 app.UseRouting();
 app.UseAuthorization();
