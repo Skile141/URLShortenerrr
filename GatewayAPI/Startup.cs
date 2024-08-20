@@ -1,4 +1,8 @@
 ﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Ocelot.DependencyInjection;
 using Ocelot.Middleware;
 
@@ -17,6 +21,18 @@ namespace GatewayAPI
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+
+            // Add CORS policy to allow requests from specific origins
+            services.AddCors(options =>
+            {
+                options.AddPolicy("AllowSpecificOrigins", builder =>
+                {
+                    builder.WithOrigins("http://localhost:5173") // Replace with your frontend URL
+                           .AllowAnyHeader()
+                           .AllowAnyMethod();
+                });
+            });
+
             services.AddOcelot();
         }
 
@@ -31,6 +47,9 @@ namespace GatewayAPI
             app.UseHttpsRedirection();
 
             app.UseRouting();
+
+            // Use the CORS policy
+            app.UseCors("AllowSpecificOrigins");
 
             app.UseAuthorization();
 

@@ -11,7 +11,6 @@ using static System.Net.WebRequestMethods;
 
 namespace URLShortener.Controllers
 {
-    //[Route("api/[controller]")]
     [ApiController]
     public class URLShortenersController : ControllerBase
     {
@@ -33,37 +32,44 @@ namespace URLShortener.Controllers
             {
                 return NotFound();
             }
-
             return urlShortener;
         }
 
         [HttpPost("api/shorten")]
         public async Task<ActionResult<string>> CreateShortURL([FromBody] CreateShortURLRequest request)
         {
+            // Check if the provided URL is valid
             if (string.IsNullOrEmpty(request.Url))
             {
                 return BadRequest("URL cannot be null or empty.");
             }
-            var ShortCodeURL = await _urlShortenerService.GenerateUniqueURL();
 
-            var uRLShorter = new URLShorter
-            {
-                URLName = request.Url,
-                URLShorterName = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/api/{ShortCodeURL}",
-                ShortCode = ShortCodeURL
-            };
+            var existingUrlShortener = await _context.URLShorter.FirstOrDefaultAsync(u => u.URLName == request.Url);
 
-            if (uRLShorter == null)
+            if (existingUrlShortener != null)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while creating the short URL.");
+                // Return the existing shortened URL
+                return Ok(existingUrlShortener.URLShorterName);
             }
 
-            _context.URLShorter.Add(uRLShorter);
+            // Generate a unique short code using the service
+            var shortCode = await _urlShortenerService.GenerateUniqueURL();
+
+            // Create the short URL model
+            var urlShorter = new URLShorter
+            {
+                URLName = request.Url, // Original URL
+                URLShorterName = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/api/{shortCode}", // Full short URL
+                ShortCode = shortCode // Unique short code
+            };
+
+            // Add the new short URL to the database
+            _context.URLShorter.Add(urlShorter);
             await _context.SaveChangesAsync();
 
-            //return CreatedAtAction("GetShortURL", new { id = uRLShorter.Id }, uRLShorter);
-            return Ok(uRLShorter.URLShorterName);
+            return Ok(urlShorter.URLShorterName);
         }
+
 
         [HttpGet("api/{shortCode}")]
         public async Task<IActionResult> RedirectToOriginalUrl(string shortCode)
